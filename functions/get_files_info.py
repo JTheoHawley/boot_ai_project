@@ -3,8 +3,8 @@ import os
 
 
 def get_files_info(working_directory, directory=None):
-    work_path = os.path.join(working_directory, directory)
-    if not os.path.abspath(work_path).startswith(os.path.abspath(working_directory)):
+    work_path = os.path.abspath(os.path.join(working_directory, directory))
+    if not work_path.startswith(os.path.abspath(working_directory)):
         return(f'Error: Cannot list "{directory}" as it is outside the permitted working directory')
     if not os.path.isdir(work_path):
         return(f'Error: "{directory}" is not a directory')
