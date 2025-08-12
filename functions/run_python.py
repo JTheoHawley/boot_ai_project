@@ -1,6 +1,8 @@
 import os
 import subprocess
 import sys
+from google.genai import types
+
 
 
 def run_python_file(working_directory, file_path):
@@ -21,3 +23,17 @@ def run_python_file(working_directory, file_path):
             return(f'STDOUT: {result.stdout}\nSTDERR: {result.stderr}')
     except Exception as e:
         return f"Error: executing Python file: {e}"
+    
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Runs the python file at the designated file path.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The file to be run.   If no file is found returns an Error.   Will return an Error if the file is not found, is not a python file, does not produce an output, or encounters a unexpected Exception.",
+            ),
+        },
+    ),
+)
