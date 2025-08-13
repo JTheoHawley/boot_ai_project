@@ -56,6 +56,9 @@ def call_function(function_call_part, verbose=False):
         print(f" - Calling function: {function_call_part.name}")
     if function_name in function_map:
         function_args["working_directory"] = "./calculator"
+        if function_name == "get_files_info":
+            if "directory" not in function_args or function_args["directory"] is None:
+                function_args["directory"] = "."
         actual_function = function_map[function_name]
         function_result = actual_function(**function_args)
         return types.Content(
@@ -83,42 +86,28 @@ def call_function(function_call_part, verbose=False):
 if len(sys.argv) == 1:
     print("No prompt provided")
     sys.exit(1)
-if "--verbose" in sys.argv:
+verbose = "--verbose" in sys.argv
+for i in range(20):
     response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=config)
-    prompt_tokens = response.usage_metadata.prompt_token_count
-    response_tokens = response.usage_metadata.candidates_token_count
-
-    if response.function_calls:
-        for function_call_part in response.function_calls:
-            function_call_result = call_function(function_call_part, verbose=True)
-            if (
-                not function_call_result.parts
-                or not function_call_result.parts[0].function_response
-            ):
-                raise Exception("empty function call result")            
-            print(f"-> {function_call_result.parts[0].function_response.response}")
+    
+    if verbose == True and hasattr(response, "usage_metadata"):
+        prompt_tokens = response.usage_metadata.prompt_token_count
+        response_tokens = response.usage_metadata.candidates_token_count
         print(f"User prompt: {user_prompt}")    
         print(f"Prompt tokens: {prompt_tokens}")
         print(f"Response tokens: {response_tokens}")
+
+    for candidate in response.candidates:
+        messages.append(candidate.content)
+        
+    if response.function_calls:
+        for function_call_part in response.function_calls:
+            
+            function_call_result = call_function(function_call_part, verbose=verbose)
+            messages.append(function_call_result)
+            if verbose:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
+        continue
     else:
-        print(f"User prompt: {user_prompt}")    
         print(response.text)
-        print(f"Prompt tokens: {prompt_tokens}")
-        print(f"Response tokens: {response_tokens}")
-
-else:
-    response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=config)
-    if response.function_calls:
-        for function_call_part in response.function_calls:
-            function_call_result = call_function(function_call_part, verbose=False)
-            if (
-                not function_call_result.parts
-                or not function_call_result.parts[0].function_response
-            ):
-                raise Exception("empty function call result")
-            print(f"-> {function_call_result.parts[0].function_response.response}")
-    else:    
-        print(response.text)
-
-
-
+        break
